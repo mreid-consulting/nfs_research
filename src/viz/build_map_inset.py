@@ -1,3 +1,4 @@
+import os
 import json
 import numpy as np
 import pandas as pd
@@ -37,7 +38,15 @@ vmax = float(np.percentile(tru["rate_per1000"], 99))
 norm = LogNorm(vmin=max(vmin, 0.5), vmax=vmax)
 cmap = plt.get_cmap("YlOrRd")
 
-cxr, cyr = np.load(f"{SCRATCH}/inset_center.npy")
+# Inset centre: dwelling-weighted centroid of the policy-selected cells (the
+# densest inner-London selection). A cached inset_center.npy overrides it if
+# present.
+_npy = f"{SCRATCH}/inset_center.npy"
+if os.path.exists(_npy):
+    cxr, cyr = np.load(_npy)
+else:
+    cxr = float(np.average(pol["x"], weights=pol["d"]))
+    cyr = float(np.average(pol["y"], weights=pol["d"]))
 HALF = 4200  # metres, densest-selection inner London window
 MINX, MAXX = cxr - HALF, cxr + HALF
 MINY, MAXY = cyr - HALF, cyr + HALF

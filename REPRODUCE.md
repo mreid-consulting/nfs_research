@@ -1,9 +1,36 @@
-# Reproducing both papers from this repository
+# Reproducing both papers
 
 Everything in `paper/main.pdf` (paper 1) and `paper2/main.pdf` (paper 2) traces
-to a results file under `results/`, which traces to code under `src/`, which
-reads the database built from `data/raw/`. This document is the end-to-end map.
-All model runs use fixed seeds (stated per module and per results summary).
+to a results file, which traces to code, which reads the aggregated database.
+This document is the end-to-end map. All model runs use fixed seeds (stated per
+module and per results summary).
+
+## Repository layout — which repo runs what
+
+The work spans **three sibling repositories**. Clone all three side by side and
+set up `nfs_data` first (it ships the database via git-LFS):
+
+```
+nfs_data/       # data layer — run:  src.ingest.*, src.build_db, src.validate
+nfs_analysis/   # models      — run:  src.models.*, src.physics.*, src.sim.*
+nfs_research/   # this repo    — run: src.viz.*, and the paper builds (latexmk)
+```
+
+- Commands below prefixed `src.ingest` / `src.build_db` / `src.validate` are run
+  **in `nfs_data`** (§1–§2).
+- Commands prefixed `src.models` / `src.physics` / `src.sim` are run **in
+  `nfs_analysis`** (§3–§5); they read the database from `nfs_data` and write model
+  outputs to `nfs_analysis/results/`. `nfs_analysis` locates `nfs_data` via the
+  `NFS_DATA` env var (default sibling `../nfs_data`).
+- Commands prefixed `src.viz`, and the `latexmk` paper builds, are run **here in
+  `nfs_research`**; `src.paths` locates the other two via `NFS_DATA` /
+  `NFS_ANALYSIS` (default siblings).
+- Paths like `data/processed/…` and `results/…` in the tables below are relative
+  to the repo that owns that command.
+
+The static figures the papers `\includegraphics` are committed under
+`paper/figures/` and `paper2/figures/`; re-running an analysis module refreshes
+its figure under `nfs_analysis/results/`, which you then copy into `paper/figures/`.
 
 ## 0. Environment
 

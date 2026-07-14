@@ -1,6 +1,7 @@
 """2x2 targeting map: rows = window (in-sample 2009-20 / out-of-sample
 2021-24), columns = estimator (EB-shrunk / realised raw), on the SAME 1,948
 policy-selected cells throughout. inset=True crops to the densest cluster."""
+import os
 import sys
 import numpy as np
 import pandas as pd
@@ -55,7 +56,12 @@ norm = LogNorm(vmin=vmin, vmax=vmax, clip=True)
 cmap = plt.get_cmap("YlOrRd")
 
 if INSET:
-    cxr, cyr = np.load(f"{SCRATCH}/inset_center.npy")
+    _npy = f"{SCRATCH}/inset_center.npy"
+    if os.path.exists(_npy):
+        cxr, cyr = np.load(_npy)
+    else:
+        cxr = float(np.average(pol["x"], weights=pol["d"]))
+        cyr = float(np.average(pol["y"], weights=pol["d"]))
     HALF = 4200
     MINX, MAXX = cxr - HALF, cxr + HALF
     MINY, MAXY = cyr - HALF, cyr + HALF
