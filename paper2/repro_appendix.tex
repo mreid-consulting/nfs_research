@@ -1,0 +1,75 @@
+\section{Reproducibility}
+\label{app:repro2}
+
+Every numbered figure and table in this paper traces to a results artifact under
+\texttt{results/}, produced by a module under \texttt{src/} that reads the project
+database. The end-to-end map, the environment (\texttt{requirements.txt}, frozen
+versions; Python~3.12, plus \texttt{gfortran} to build NIST CFAST for the physics
+engine), and the one-command database rebuild
+(\texttt{python -m src.build\_db --with-epc --with-lfb}, or attach the shipped
+DuckDB files) are documented in \texttt{REPRODUCE.md} at the repository root.
+Priors are exactly as stated in the model and calibration sections; all sampler
+settings (draws, warmup, chains, design sizes) live in the cited modules and are
+echoed into each \texttt{results/*/summary.md} or \texttt{report.md}. All Monte
+Carlo, MCMC and Latin-hypercube runs use fixed seeds, listed below.
+Tables~\ref{tab:repro-fig2} and~\ref{tab:repro-tab2} give the per-figure and
+per-table provenance; the sub-LSOA maps use live basemap tiles and so may render
+cosmetically differently, as noted in \texttt{REPRODUCE.md} \S7.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \caption{Reproducing each numbered \emph{figure}. Commands are run from the
+  repository root inside the virtual environment.}
+  \label{tab:repro-fig2}
+  \begin{tabular}{@{}p{1.5cm}p{4.5cm}p{4.1cm}p{4.1cm}@{}}
+    \toprule
+    Figure & Producing module / function & Input artifacts & Seed(s) \& config \\
+    \midrule
+    \ref{fig:concentration} & \texttt{src.models.london\_pilot}
+      (\texttt{fig\_concentration}) & London 50\,m cell panel
+      (\texttt{results/london\_pilot/}) & \texttt{SEED=20260706} \\
+    \ref{fig:map} & \texttt{python src/viz/build\_map\_2x2.py}
+      (\,+\,\texttt{build\_map\_inset.py}) & \texttt{data/processed/london\_map\_cells.parquet};
+      live CARTO/OSM tiles & no seed (basemap live) \\
+    \ref{fig:targeting} & \texttt{src.models.london\_pilot} (\texttt{fig\_targeting})
+      & \texttt{results/london\_pilot/} targeting economics
+      & \texttt{SEED=20260706} \\
+    \ref{fig:carehome} & \texttt{src.models.london\_pilot}
+      (\texttt{fig\_carehome\_rates}, analysis~B) & care-home building panel
+      (\texttt{results/london\_pilot/}) & \texttt{SEED=20260706} \\
+    \ref{fig:reportcard} & \texttt{src.physics.phaseB\_analysis}
+      (\texttt{fig\_report\_card}) & calibration posterior
+      (\texttt{results/physics/calibration/posterior.nc})
+      & calibrate \texttt{PRNGKey(0)}, NUTS $4\times(1000{+}1000)$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \caption{Reproducing each numbered \emph{table}.}
+  \label{tab:repro-tab2}
+  \begin{tabular}{@{}p{1.6cm}p{4.6cm}p{4.0cm}p{4.0cm}@{}}
+    \toprule
+    Table & Producing module / command & Input artifacts & Seed(s) \& config \\
+    \midrule
+    \ref{tab:concentration} & \texttt{python -m src.models.london\_pilot}
+      & \texttt{results/london\_pilot/summary.md} & \texttt{SEED=20260706} \\
+    \ref{tab:cellvalue} & \texttt{python -m src.models.london\_pilot}
+      (\texttt{targeting\_economics}) & \texttt{results/london\_pilot/}
+      ranked-cell value & \texttt{SEED=20260706} \\
+    \ref{tab:boroughs} & \texttt{python src/viz/build\_borough\_table.py}
+      & \texttt{results/london\_pilot/borough\_allocation.csv}
+      & deterministic from ranked cells (no seed) \\
+    \ref{tab:theta} & \texttt{python -m src.physics.calibrate} then
+      \texttt{src.physics.phaseB\_analysis} (\texttt{behavioural\_table})
+      & CFAST sweep emulator; \texttt{posterior.nc}
+      & sweep \texttt{seed=20260706}; calibrate \texttt{PRNGKey(0)},
+      NUTS $4\times(1000{+}1000)$, LHS $M{=}1400$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}

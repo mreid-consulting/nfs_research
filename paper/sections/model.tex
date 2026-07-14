@@ -1,0 +1,497 @@
+\section{Probabilistic Model of Building Fire Risk}
+\label{sec:model}
+
+We treat the fire risk of a residential building $b$ not as a categorical score
+but as a \emph{posterior distribution} over the coupled processes of ignition,
+fire development, evacuation failure, and consequence severity, updated as
+evidence arrives. This section formalises that view.
+
+\subsection{Risk as expected loss}
+
+Let $I_b(t)$ denote the event that a fire ignites in building $b$ during
+year $t$, and let $C_b(t)$ denote the resulting consequence (loss). We define the
+annualised risk as the expected loss,
+\begin{equation}
+  R_b(t) \;=\; P\!\big(I_b(t)\big)\,\cdot\,
+  \mathbb{E}\!\big[\,C_b(t)\,\big|\,I_b(t)\,\big],
+  \label{eq:risk}
+\end{equation}
+i.e.\ the product of ignition probability and expected consequence given
+ignition. This mirrors the decomposition used in probabilistic safety analysis
+and in Bayesian-network dwelling-fire models
+\citep{matellini2018threepart,estradalugo2019grenfell}.
+
+\subsection{Consequence decomposition}
+
+Consequence is not a single quantity: a fire can destroy property without harming
+anyone, and can injure without spreading beyond the room of origin. We therefore
+decompose expected consequence as a \emph{sum over loss channels},
+\begin{equation}
+  \mathbb{E}\!\big[C_b \mid I_b\big] \;=\;
+  \mathbb{E}\!\big[C^{\mathrm{prop}}_b \mid I_b\big] +
+  \mathbb{E}\!\big[C^{\mathrm{inj}}_b \mid I_b\big] +
+  \mathbb{E}\!\big[C^{\mathrm{fat}}_b \mid I_b\big],
+  \label{eq:consequence-channels}
+\end{equation}
+and, within each channel, marginalise over the fire-development pathway rather
+than forcing every loss through a single chain. Writing $S$ for the extent of
+spread (an ordered variable: contained to item, room of origin, beyond room,
+beyond floor) and $E_f$ for evacuation failure,
+\begin{equation}
+  P\!\big(\text{casualty} \mid I_b\big) \;=\;
+  \sum_{s}\;\sum_{e \in \{E_f, \bar{E}_f\}}
+  P\!\big(\text{casualty} \mid e, s, I_b\big)\,
+  P\!\big(e \mid s, I_b\big)\,
+  P\!\big(s \mid I_b\big),
+  \label{eq:consequence}
+\end{equation}
+which preserves the causal ordering ignition $\to$ spread $\to$ egress $\to$ harm
+while permitting casualties without major spread (e.g.\ smoke inhalation or
+fire-fighting attempts in the room of origin, the $s{=}\text{room}$,
+$e{=}\bar{E}_f$ terms) and property loss without evacuation failure. The dominant
+term for fatalities is the one highlighted by the multiplicative chain
+$P(S{\geq}\text{room}\mid I)\,P(E_f\mid S,I)\,\mathbb{E}[L\mid E_f,S,I]$, which we
+retain as the leading-order approximation used in the worked examples; Equation~%
+\eqref{eq:consequence} is the full object. Each factor depends on the building's
+physical and occupancy characteristics; the egress factors are where the
+physics-based consequence surrogate of Section~\ref{sec:surrogate} enters,
+and the property channel is valued directly from incident-damage statistics.
+
+\paragraph{Why this factorisation.} Four modelling choices in
+Equation~\eqref{eq:consequence} warrant defence. First, spread is marginalised
+\emph{before} egress because the two orderings coincide: compartmentation failure
+is physically upstream of tenability loss, so conditioning harm on spread respects
+the causal chain, and spread is also the margin the national incident record
+actually reports, so the factorisation matches an observable quantity rather than
+a latent one. Second, evacuation is kept binary ($E_f$ versus $\bar E_f$) because
+the record carries no evacuation \emph{timing}, only its outcome; a finer egress
+state would be prior, not data. Third, suppression is not a separate factor:
+sprinkler coverage in the existing English dwelling stock is of the order of one
+per cent, so it is negligible as a population term, and brigade intervention acts
+\emph{after} the spread outcome that defines our margin, so its effect is already
+absorbed into the empirically estimated $P(s\mid I_b)$ rather than double-counted.
+Fourth, we do not carry a fully joint latent $(\text{spread},\text{occupancy},
+\text{detection})$ object here: that model is written down in
+Section~\ref{sec:model-inspection}, but it is not identified from a single
+cross-section, so the factorised form of Equation~\eqref{eq:consequence} is the
+part the present data support.
+
+\subsection{Latent building state and evidence}
+
+The factors in Equations~\eqref{eq:risk}--\eqref{eq:consequence} are governed by
+a \emph{latent building state}
+\begin{equation}
+  \begin{aligned}
+  z_b \;=\; \{\, &\text{compartmentation},\ \text{fuel load},\
+  \text{alarm reliability},\ \text{suppression},\\
+  &\text{occupancy vulnerability},\ \text{maintenance quality},\
+  \text{electrical risk} \,\},
+  \end{aligned}
+  \label{eq:latent}
+\end{equation}
+which is never observed directly. Instead we observe \emph{evidence}
+\begin{equation}
+  \begin{aligned}
+  x_b \;=\; \{\, &\text{inspection findings},\ \text{public building attributes},\\
+  &\text{incident history},\ \text{occupancy proxies},\
+  \text{local covariates} \,\}.
+  \end{aligned}
+  \label{eq:evidence}
+\end{equation}
+Inference proceeds in two steps: recover the posterior over latent state,
+\begin{equation}
+  P\!\big(z_b \mid x_b\big) \;\propto\;
+  P\!\big(x_b \mid z_b\big)\,P\!\big(z_b\big),
+  \label{eq:posterior-z}
+\end{equation}
+and propagate it through the risk model to obtain the posterior risk
+distribution,
+\begin{equation}
+  P\!\big(R_b \mid x_b\big) \;=\;
+  \int P\!\big(R_b \mid z_b\big)\,P\!\big(z_b \mid x_b\big)\,\mathrm{d}z_b .
+  \label{eq:posterior-R}
+\end{equation}
+Equation~\eqref{eq:posterior-R} is the central object of the framework: \emph{risk
+is a distribution, not a score}. Its spread quantifies uncertainty arising from
+missing or unreliable evidence, and its credible intervals and missing-evidence
+flags are the operational outputs consumed by FRA workflows
+(Section~\ref{sec:results}).
+
+\paragraph{Implemented vs proposed.} This paper implements calibrated components
+of Equations~\eqref{eq:risk}--\eqref{eq:consequence} --- a small-area occurrence
+model for $P(I)$, record-level consequence models, and the consequence simulator ---
+composed with propagated uncertainty in Sections~\ref{sec:results-synthesis}
+and~\ref{sec:results-decision}. The joint latent-state posterior of
+Equations~\eqref{eq:posterior-z}--\eqref{eq:posterior-R}, with the variables of
+Equation~\eqref{eq:latent}, is specified in full but only partially instantiated:
+Section~\ref{sec:results-latent} fits its measurement model on 1{,}441 published
+fire risk assessments, while the transition dynamics remain unidentified until
+repeated assessment waves exist.
+
+\paragraph{Predictive association vs intervention effect.} Throughout we
+distinguish the \emph{predictive} quantity $P(Y{=}1 \mid x, I)$, which record-level
+regressions estimate, from the \emph{interventional} contrast
+$P\!\big(Y^{\mathrm{do(alarm=working)}}{=}1\big) -
+ P\!\big(Y^{\mathrm{do(alarm=absent)}}{=}1\big)$. Observational fire data conflate
+the two: alarm operation, occupancy, and casualty are mutually selected, since an
+alarm operates, and a casualty can occur, only when someone is present. Predictive
+associations are therefore used for risk ranking, while intervention effects are
+taken from the mechanism-informed simulator, whose alarm effect is interventional
+by construction (Section~\ref{sec:surrogate}). The distinction is drawn here,
+before any results, because Section~\ref{sec:results} reports estimates whose
+observational sign differs from the interventional one.
+
+\subsection{Inspection as noisy observation}
+\label{sec:model-inspection}
+
+We treat an inspection not as ground truth but as a noisy, intermittent
+measurement of the latent state, in the spirit of detector/measurement-error
+modelling. For a latent attribute $z_b^{(k)}$ (e.g.\ compartmentation integrity),
+an inspection at time $t$ yields an observation $o_b^{(k)}(t)$ through an
+observation model
+\begin{equation}
+  o_b^{(k)}(t) \;\sim\; P\!\big(o \mid z_b^{(k)},\, \phi_k \big),
+  \label{eq:obs-model}
+\end{equation}
+where $\phi_k$ captures inspection sensitivity, specificity, and inspector
+variability. Absence of a recent inspection simply means no update to
+$P(z_b^{(k)}\mid x_b)$, so uncertainty grows with time since last observation.
+
+\paragraph{Latent-state dynamics, and what the data instantiate.} Indexing the
+state by time, $z_{b,t}$ follows a first-order state space with interventions,
+\begin{align}
+  z_{b,t} &\;\sim\; p\big(z_{b,t} \mid z_{b,t-1},\, u_{b,t}\big)
+  &&\text{(slow drift; jumps at refurbishment/intervention $u_{b,t}$)},
+  \label{eq:ss-transition}\\
+  o_{b,t} &\;\sim\; p\big(o_{b,t} \mid z_{b,t},\, \phi\big)
+  &&\text{(inspection observations, Eq.~\eqref{eq:obs-model})},
+  \label{eq:ss-obs}\\
+  y_{b,t} &\;\sim\; p\big(y_{b,t} \mid z_{b,t},\, x_{b,t}\big)
+  &&\text{(incident outcomes: the models of Section~\ref{sec:results})},
+  \label{eq:ss-outcome}
+\end{align}
+so a new inspection updates $P(z_{b,t}\mid o_{b,1:t}, y_{b,1:t}, x_{b,1:t})$ by
+standard filtering, and drift between inspections widens it. The assessor
+parameters $\phi$ --- detection sensitivity, specificity, between-assessor
+variance --- are the empirically hardest piece. Section~\ref{sec:results-latent}
+fits the measurement model of Equation~\eqref{eq:ss-obs} on 1{,}441 published fire
+risk assessments across 653 Camden estates and \emph{bounds} detection sensitivity
+from their recurrence structure; point identification of $\phi$ and of the
+transition dynamics in Equation~\eqref{eq:ss-transition} needs repeated assessment
+waves of the same buildings. We specify the model now because the repeated
+assessments mandated under the Building Safety Act will identify these parameters;
+the contribution here is the framework and the first empirical persistence
+estimates, not a fitted latent state.
+
+This framing also yields the \emph{expected value of inspection} (EVI): with actions
+$a$ and losses $L$, acquiring observation $o_b$ before acting is worth
+\begin{equation}
+  \mathrm{EVI}(b) \;=\;
+  \min_a \mathbb{E}\!\big[L(a) \mid x_b\big]
+  \;-\;
+  \mathbb{E}_{o_b}\!\Big[\min_a \mathbb{E}\!\big[L(a) \mid x_b, o_b\big]\Big]
+  \;\;\geq\; 0,
+  \label{eq:evi}
+\end{equation}
+the classic value-of-information quantity: it is largest where the posterior is
+both consequential and undecided, and zero where the optimal action is already
+determined. Section~\ref{sec:results-decision} instantiates
+Equation~\eqref{eq:evi} for alarm-ownership inspection and shows the resulting
+ranking differs materially from expected-risk ranking.
+
+\subsection{Decision layer: allocating a prevention budget}
+\label{sec:model-decision}
+
+The posterior risk distributions exist to drive decisions, so the framework
+includes the allocation problem explicitly. Let area $i$ contain $H_i$ dwellings,
+let $n_i$ be the number visited under a prevention programme with budget $B$, and
+let $b_i$ be the expected present-value averted loss per visited dwelling ---
+composed from the posterior fire rate, the probability the dwelling lacks a
+working alarm, and the interventional consequence reduction of
+Section~\ref{sec:surrogate}. The allocation problem is
+\begin{equation}
+  \max_{n}\; \sum_i n_i\, b_i
+  \qquad \text{s.t.} \quad \sum_i n_i \le B,
+  \quad 0 \le n_i \le H_i .
+  \label{eq:knapsack}
+\end{equation}
+Because every dwelling within an area shares the same marginal value $b_i \ge 0$,
+Equation~\eqref{eq:knapsack} is a continuous knapsack with box constraints, and
+the greedy rule the implementation uses --- fill areas in decreasing order of
+$b_i$ until the budget is exhausted --- is exactly optimal.
+
+\begin{proposition}[Greedy optimality of the allocation]
+\label{prop:greedy}
+Let $b_i \ge 0$ and index the areas so that $b_{(1)} \ge b_{(2)} \ge \cdots$.
+In the continuous relaxation of Equation~\eqref{eq:knapsack} ($n_i \in [0,H_i]$,
+$\sum_i n_i \le B$), the greedy allocation that fills areas in this order ---
+$n_{(1)} = H_{(1)}, n_{(2)} = H_{(2)}, \dots$ until the running total reaches $B$,
+filling the final boundary area only partially and setting the remainder to
+zero --- attains the maximum of $\sum_i n_i b_i$.
+\end{proposition}
+
+\begin{proof}
+A maximiser exists: the objective is linear and the feasible set compact. Let
+$n^\ast$ be any maximiser and suppose it is not of the greedy form. Then there is
+a pair $(j,k)$ with $b_j > b_k$, $n^\ast_j < H_j$ and $n^\ast_k > 0$: a
+higher-value area not yet full while a lower-value one still draws budget. Moving
+$\delta = \min(H_j - n^\ast_j,\; n^\ast_k) > 0$ from $k$ to $j$ leaves
+$\sum_i n_i$ unchanged and both box constraints satisfied, so the result is
+feasible, and it raises the objective by $\delta\,(b_j - b_k) > 0$ ---
+contradicting the optimality of $n^\ast$. Every maximiser is therefore of the
+greedy form, and all greedy-form allocations share the same objective value
+(ties $b_j = b_k$ only permute budget between equal-value areas), so the greedy
+allocation attains the maximum. (If $B \ge \sum_i H_i$ the budget binds nowhere
+and $n_i = H_i$ is optimal because $b_i \ge 0$.)
+\end{proof}
+
+\noindent\emph{Remarks.} Were the per-area benefit strictly concave, $g_i(n_i)$
+with $g_i'$ non-increasing, the KKT conditions of the same concave programme would
+replace ``fill in order'' by \emph{water-filling}: interior areas equalise their
+marginal benefit $g_i'(n_i) = \mu$ at the budget multiplier $\mu$, and the linear
+case is the degenerate limit in which a constant marginal $g_i' = b_i$ forces each
+area to fill completely before the next opens. Because visits are integer
+dwellings, the deployed allocation rounds only the single boundary area, so the
+gap between the integer optimum and the continuous one is at most the benefit of
+one dwelling there, $\le \max_i b_i$ --- negligible against a budget of order
+$10^5$ visits.
+
+Uncertainty propagates by solving Equation~\eqref{eq:knapsack} per posterior draw,
+giving credible intervals on the value of any policy; and replacing $b_i$ with
+$\mathrm{EVI}_i$ of Equation~\eqref{eq:evi} yields the inspection-prioritisation
+variant.
+
+\paragraph{Propagating posterior uncertainty to the decision.} The pipeline is a
+posterior $\pi(\theta \mid y)$, a loss $L(a,\theta)$ evaluated through the
+simulator, and a plug-in decision that minimises the posterior expected loss. Two
+guarantees govern how uncertainty in $\theta$ reaches the chosen action.
+
+\begin{assumption}[Lipschitz loss]
+\label{ass:lipschitz}
+The action set $A$ is finite, and for each $a \in A$ the loss $L(a,\cdot)$ is
+$L_a$-Lipschitz in $\theta$ on a set containing both the support of
+$\pi(\theta \mid y)$ and the point estimate $\hat\theta$, i.e.\
+$|L(a,\theta) - L(a,\theta')| \le L_a \|\theta - \theta'\|$. Write
+$L_{\max} = \max_{a \in A} L_a$.
+\end{assumption}
+
+\begin{proposition}[Propagation and decision robustness]
+\label{prop:propagation}
+Write $\bar L(a) = \mathbb{E}_\pi[L(a,\theta) \mid y]$ for the posterior expected
+loss and $a^\star = \arg\min_{a} \bar L(a)$ for the Bayes action.
+\begin{enumerate}
+\item[(i)] \textup{(Monte Carlo propagation.)} For $S$ posterior draws
+$\theta_s \sim \pi(\cdot \mid y)$, the estimator
+$\hat L_S(a) = S^{-1}\sum_{s=1}^{S} L(a,\theta_s)$ is unbiased for $\bar L(a)$ with
+standard error $\sqrt{\mathrm{Var}_\pi[L(a,\theta)]\,/\,S}$. If the draws are
+importance-weighted with self-normalised weights $w_s$ ($\sum_s w_s = 1$), the
+estimator $\sum_s w_s\, L(a,\theta_s)$ has, by the delta method, variance
+approximately $\mathrm{Var}_\pi[L(a,\theta)]\,/\,S_{\mathrm{eff}}$ with effective
+sample size $S_{\mathrm{eff}} = 1/\sum_s w_s^2$ --- the importance-sampling
+effective sample size of Kong (1992).
+\item[(ii)] \textup{(Decision robustness.)} Let $\hat\theta$ be any point estimate
+and $\hat a = \arg\min_{a} L(a,\hat\theta)$ the plug-in action. Under
+Assumption~\ref{ass:lipschitz} the Bayes regret of acting on $\hat\theta$ obeys
+\begin{equation}
+  \bar L(\hat a) - \bar L(a^\star)
+  \;\le\; 2\,L_{\max}\,\mathbb{E}_\pi\|\theta - \hat\theta\| .
+  \label{eq:regret-bound}
+\end{equation}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Part (i) is the standard Monte Carlo variance, with the self-normalised
+importance-sampling correction $S_{\mathrm{eff}} = (\sum_s w_s)^2 / \sum_s w_s^2 =
+1/\sum_s w_s^2$ for normalised weights. For part (ii), write
+$\varepsilon = \mathbb{E}_\pi\|\theta - \hat\theta\|$. For every $a$,
+\begin{equation*}
+  |\bar L(a) - L(a,\hat\theta)|
+  = \big|\,\mathbb{E}_\pi[L(a,\theta) - L(a,\hat\theta)]\,\big|
+  \le \mathbb{E}_\pi\,|L(a,\theta) - L(a,\hat\theta)|
+  \le L_a\,\varepsilon \le L_{\max}\,\varepsilon .
+\end{equation*}
+Decompose the regret by inserting $L(\cdot,\hat\theta)$:
+\begin{equation*}
+  \bar L(\hat a) - \bar L(a^\star)
+  = \underbrace{[\,\bar L(\hat a) - L(\hat a,\hat\theta)\,]}_{\le\, L_{\max}\varepsilon}
+  + \underbrace{[\,L(\hat a,\hat\theta) - L(a^\star,\hat\theta)\,]}_{\le\, 0}
+  + \underbrace{[\,L(a^\star,\hat\theta) - \bar L(a^\star)\,]}_{\le\, L_{\max}\varepsilon}.
+\end{equation*}
+The middle bracket is non-positive because $\hat a$ minimises $L(\cdot,\hat\theta)$;
+the outer two are each at most $L_{\max}\varepsilon$ by the preceding display.
+Summing gives Equation~\eqref{eq:regret-bound}.
+\end{proof}
+
+Part (ii) makes the value of sharp inference concrete: posterior contraction from
+full-data inference (Section~\ref{sec:results}) shrinks
+$\mathbb{E}_\pi\|\theta - \hat\theta\|$ and so tightens the regret bound directly,
+meaning a point-estimate decision forfeits least precisely where the posterior is
+already concentrated. Section~\ref{sec:results-decision} evaluates both allocation
+variants against random and deprivation-based allocation.
+
+\subsection{Rare events and calibration}
+\label{sec:model-rare}
+
+Building-level fire is a rare event: annual ignition probabilities are small and
+severe outcomes rarer still \citep{mhclg2026firestats}. This has two
+consequences for the model. First, estimation must borrow strength across
+buildings via hierarchical/partial-pooling priors on $P(I_b)$ and on the
+consequence factors, rather than fitting each building independently. Second,
+\emph{calibration} is a first-class objective: predicted probabilities and
+credible intervals must match observed frequencies at the population level.
+We therefore evaluate the model with proper scoring rules and calibration
+diagnostics (reliability curves, coverage of credible intervals) against
+historical English incident statistics, treating the aggregate counts as the
+frequency ground truth for the rare-event process (Section~\ref{sec:results}).
+
+\subsection{From specification to fit: estimation and evaluation machinery}
+\label{sec:model-estimation}
+
+The results of Section~\ref{sec:results} instantiate the framework with three
+fitted likelihoods; we state them fully here so that every fit is reproducible
+from the paper alone.
+
+\paragraph{Occurrence.} Dwelling-fire counts $y_{it}$ in LSOA $i$ and fiscal
+year $t$ follow a hierarchical negative binomial in its mean--dispersion
+(NB2) form,
+\begin{align}
+  y_{it} &\;\sim\; \mathrm{NB2}\big(\mu_{it},\, \phi\big),
+  \qquad
+  \mathrm{Var}[y_{it}] = \mu_{it} + \mu_{it}^2/\phi,
+  \label{eq:nb2}\\
+  \log \mu_{it} &\;=\; \log H_i \;+\; \alpha
+  \;+\; \mathbf{x}_{it}^{\top}\boldsymbol\beta
+  \;+\; b\,(t - \bar t)
+  \;+\; u_{f(i)} \;+\; s_i ,
+  \label{eq:occ-linpred}
+\end{align}
+with households $H_i$ as exposure offset, ten standardised covariates
+$\mathbf{x}_{it}$, a linear year trend, service random intercepts
+$u_f \sim \mathcal{N}(0, \sigma_u^2)$, and --- in the preferred M5
+specification --- a BYM2 spatial effect
+$s_i = \sigma_s\big(\sqrt{1-\rho}\; v_i + \sqrt{\rho}\; w_i/\sqrt{\kappa}\big)$
+combining unstructured noise $v_i \sim \mathcal{N}(0,1)$ with an intrinsic
+conditional autoregression $\mathbf{w} \sim \mathrm{ICAR}(\mathbf{A})$ on the
+queen-contiguity LSOA adjacency $\mathbf{A}$, scaled by the graph's marginal
+variance $\kappa$ so that $\sigma_s$ and the mixing weight $\rho$ are
+interpretable. Priors are weakly informative:
+$\alpha \sim \mathcal{N}(-6.5, 1.5^2)$ centred on the historical national
+log-rate, $\beta_k \sim \mathcal{N}(0,1)$,
+$b \sim \mathcal{N}(0, 0.5^2)$, $\sigma_u \sim \mathrm{HalfNormal}(0.5)$,
+and $1/\phi \sim \mathrm{HalfNormal}(1)$, the last parameterised through the
+inverse concentration so the Poisson limit sits at the prior mode's edge rather
+than at a boundary singularity --- the reparameterisation that restores
+tractable posterior geometry.
+
+\paragraph{Consequence.} Record-level outcomes (serious spread; any casualty)
+follow hierarchical logistic regressions,
+\begin{equation}
+  y_{jf} \sim \mathrm{Bernoulli}(p_{jf}), \qquad
+  \mathrm{logit}\, p_{jf} = \alpha + \mathbf{x}_j^{\top}\boldsymbol\beta
+  + u_f, \qquad u_f \sim \mathcal{N}(0, \sigma_u^2),
+  \label{eq:cons-logit}
+\end{equation}
+with reference-coded factors for dwelling type, cause, ignition power,
+occupancy, time of day, the four-level alarm factor, a standardised year trend
+and the service-year response-time control; priors
+$\alpha \sim \mathcal{N}(0, 5^2)$, $\beta \sim \mathcal{N}(0, 2.5^2)$,
+$\sigma_u \sim \mathrm{HalfNormal}(1)$.
+
+\paragraph{How the fits are performed.} Exact posteriors are drawn with the
+No-U-Turn Sampler (NUTS), the adaptive Hamiltonian Monte Carlo variant that
+simulates Hamiltonian trajectories on the log-posterior and eliminates
+hand-tuned step counts. Hierarchical models of this type develop funnel-shaped
+geometry at full data scale on which the NUTS step size collapses; we therefore
+follow a two-track protocol. Track one: exact NUTS on stratified subsamples
+($\sim$10{,}000 LSOAs spanning every service; $\sim$30{,}000 fires stratified
+by fiscal year), 2--4 chains, 300--1{,}000 warmup and post-warmup draws,
+accepted only with $\hat{R} \le 1.02$, bulk effective sample sizes above
+$\sim$150 for every reported quantity, and zero divergent transitions. Track
+two: the identical model on the \emph{full} data by automatic-differentiation
+variational inference (ADVI), fitting a full-rank Gaussian
+$q_{\lambda}(\boldsymbol\theta)$ by maximising the evidence lower bound
+\begin{equation}
+  \mathrm{ELBO}(\lambda) \;=\;
+  \mathbb{E}_{q_\lambda}\big[\log p(\mathbf{y}, \boldsymbol\theta)\big]
+  \;-\; \mathbb{E}_{q_\lambda}\big[\log q_\lambda(\boldsymbol\theta)\big],
+  \label{eq:elbo}
+\end{equation}
+which serves as a point-estimate cross-check on all the data: coefficients must
+agree with the subsample NUTS posterior within its credible intervals. Known
+variational failure modes --- ridge-splitting between an intercept and its
+random-effect mean, understated group-level predictive uncertainty --- are
+checked for and reported wherever they occur.
+
+Where exact NUTS is feasible on the full data, it supersedes both tracks: the
+consequence models (logistic likelihood, no dispersion parameter) converge
+cleanly on all 451{,}172 records and those posteriors are the ones reported.
+The occurrence model does not admit full-data NUTS: on all 202{,}530 training
+rows the negative-binomial posterior concentrates onto a ridge between the
+intercept, the service-effect mean and the dispersion parameter that defeats
+every standard reparameterisation --- non-centred random effects mix at
+effective sample sizes of single digits, the centred form collapses the
+adapted step size to $4\times10^{-6}$, and a QR-orthogonalised design (which
+removes the deprivation-domain collinearity) still collapses to
+$5\times10^{-7}$. Sampling difficulty is however a \emph{traversal} problem,
+and importance sampling requires only \emph{coverage}: with 58 unconstrained
+parameters and $2\times10^{5}$ observations the posterior is close to Gaussian
+(Bernstein--von Mises), so the exact full-data posterior is recovered by
+Pareto-smoothed importance sampling (PSIS) \citep{vehtari2024psis} over a
+Laplace proposal. Concretely: the model is written in its \emph{centred}
+parameterisation --- hopeless for NUTS, but the right coordinates here, since
+each service's thousands of observations pin its effect directly and the
+residual intercept--service-mean ridge is linear, which a Gaussian proposal
+absorbs exactly through the Hessian; the mode and dense Hessian are computed
+in unconstrained space; a multivariate Student-$t$ ($\nu=8$, scale 1.1) with
+that mean and covariance proposes 50{,}000 draws; and the importance weights
+$w_s \propto p(\boldsymbol\theta_s \mid \mathbf{y}) / q(\boldsymbol\theta_s)$
+are stabilised by generalised-Pareto smoothing of the largest weights. The
+smoothing diagnostic certifies the result: $\hat{k} = 0.33$, far below the 0.7
+reliability threshold, with an importance-sampling effective sample size of
+16{,}892 --- and the recovered posterior matches the subsample NUTS, ADVI and
+maximum-likelihood (MLE) fits on every parameter. The two-track protocol is thus retained as
+scaffolding and cross-check, while every headline posterior in this paper is
+an exact full-data object.
+
+\paragraph{How calibration is measured.} For discrete counts, central-interval
+coverage over-covers structurally, so the primary diagnostic is the randomised
+probability integral transform: for held-out count $y$ with predictive
+cumulative distribution $F$,
+\begin{equation}
+  u \;=\; F(y-1) \;+\; v\,\big[F(y) - F(y-1)\big],
+  \qquad v \sim \mathrm{Uniform}(0,1),
+  \label{eq:pit}
+\end{equation}
+which is exactly $\mathrm{Uniform}(0,1)$ if and only if the predictive
+distribution is calibrated; we report the Kolmogorov--Smirnov distance of $u$
+from uniformity and the randomised coverage of central 50\%/90\% intervals.
+Binary outcomes are scored with the Brier score
+$\tfrac1n\sum_j (p_j - y_j)^2$, the mean log score, and the expected
+calibration error $\mathrm{ECE} = \sum_m \tfrac{n_m}{n}\,
+\lvert \bar p_m - \bar y_m \rvert$ over $M{=}10$ equal-width probability
+bins, alongside coverage of service-level posterior-predictive count
+intervals. All evaluation is out-of-time: the final one or two fiscal years
+are never seen in fitting.
+
+\paragraph{Fitting the measurement model.} The latent-state instantiation of
+Section~\ref{sec:results-latent} operationalises
+Equations~\eqref{eq:ss-obs}--\eqref{eq:ss-outcome} cross-sectionally: a scalar
+latent deficit $\theta_e \sim \mathcal{N}(0,1)$ per estate $e$ loads on the
+assessment indicators --- ordinal overall rating via a cumulative-logit link,
+priority-A and priority-B action counts via Poisson links
+$\log \mathbb{E}[\text{count}] = a_k + \lambda_k \theta_e$, and
+deficiency-theme flags via Bernoulli-logit links --- while the structural
+outcome is the estate's long-run fire count,
+\begin{equation}
+  y_e \sim \mathrm{NB2}\big(\mu_e, \phi\big), \qquad
+  \log \mu_e = \log E_e + \alpha + \beta_\theta\, \theta_e
+  + \beta_{\mathrm{IMD}}\, \mathrm{IMD}_e,
+  \label{eq:measurement}
+\end{equation}
+with exposure $E_e$ (flats $\times$ years) and orientation pinned by
+constraining the priority-A loading positive. The posterior update shown in
+Figure~\ref{fig:latent} is then literal conditioning: the block's
+$P(\theta_e \mid \text{FRA indicators})$ propagated through
+Equation~\eqref{eq:measurement} to a fire-rate posterior, before and after the
+indicators are observed.

@@ -1,0 +1,95 @@
+\documentclass[11pt]{article}
+
+% --- arXiv-friendly, journal-agnostic single-column setup ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\newtheorem{proposition}{Proposition}
+\newtheorem{assumption}{Assumption}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\setlength{\bibsep}{0.3ex plus 0.2ex}
+\usepackage{multicol}
+\usepackage{lineno}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+% Allow long URLs/DOIs to break at punctuation (needed for two-column references)
+\makeatletter
+\g@addto@macro\UrlBreaks{\do\/\do\-\do\.\do\=\do\?\do\&\do\_\do\:}
+\makeatother
+\Urlmuskip=0mu plus 1mu\relax
+% Float-packing: allow more float area per page in this float-heavy paper
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{5}
+
+\title{Uncertainty-Aware Fire Risk Assessment for UK Residential Buildings
+Using Public Data and Mechanism-Informed Simulation}
+
+\author{Matthew Reid}
+\date{\today}
+
+\begin{document}
+\linenumbers
+\maketitle
+
+\begin{abstract}
+Fire risk assessment in the UK built environment remains largely periodic,
+qualitative, and compliance-oriented, despite the availability of public
+incident, building, demographic, and regulatory data. This paper develops an
+uncertainty-aware framework for residential fire-risk assessment and targeting
+in England. We combine public fire incident statistics, Energy Performance
+Certificate records, deprivation indices, Census occupancy proxies, care-home
+registers, and fire-service geography into an open, validated,
+UPRN-keyed (dwelling-level) database, and estimate calibrated posterior distributions for
+dwelling-fire occurrence and consequence-relevant outcomes. A hierarchical
+negative-binomial model predicts annual small-area dwelling-fire counts with
+held-out probabilistic calibration; record-level consequence models estimate
+serious spread and casualty associations under explicit treatment of
+alarm-state confounding, separating predictive association from intervention
+effect. To represent building mechanisms not observed in public registers, we
+introduce a transparent, mechanism-informed archetype fire/egress simulator,
+benchmark it against observed spread and casualty margins and a documented
+real-building boundary case, and compress its outputs into interpretable
+consequence surrogates. We then demonstrate decision-theoretic prevention
+targeting: under stated assumptions, a fixed smoke-alarm visit budget averts
+substantially more harm when allocated by posterior risk and expected benefit
+than by random or deprivation-only rules. The paper contributes a calibrated,
+auditable public-data decision framework for fire-risk prioritisation, and
+sets out a latent-state extension in which inspection findings are treated as
+noisy observations for live risk updating --- providing a first partial
+instantiation on 1{,}441 published fire risk assessments: a fitted
+measurement model, a worked single-building posterior update, and first
+empirical bounds on assessor detection sensitivity, with full structural
+identification awaiting repeated assessment waves.
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/model}
+\input{sections/data}
+\input{sections/surrogate}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+\appendix
+\input{sections/appendix_repro}
+
+{\footnotesize
+\setlength{\columnsep}{18pt}
+\begin{multicols}{2}
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{multicols}
+}
+
+\end{document}

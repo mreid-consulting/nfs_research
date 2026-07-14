@@ -1,0 +1,29 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have recast UK residential fire risk assessment as Bayesian inference: risk is a
+posterior distribution over ignition, spread, evacuation failure, and consequence,
+updateable as evidence arrives, rather than a categorical score. The instantiated
+components stand on their own evidence: a small-area occurrence model whose 50\%
+and 90\% intervals cover 50.5\% and 90.2\% of held-out outcomes across all
+33{,}755 English LSOAs, with calibration holding within deprivation, geography, and
+building-form subgroups; consequence models that separate predictive association
+from intervention effect and expose, rather than inherit, the confounds of
+observational fire data; a mechanism-informed simulator whose orderings match the
+national record and whose boundary a real-building stress test locates precisely;
+and a decision layer in which the same posteriors allocate a fixed prevention
+budget to roughly nine times the value of untargeted allocation --- above
+break-even outright at small, concentrated budgets. The proposed latent-state
+layer is now partially real: its measurement model is fitted on 1{,}441 published
+fire risk assessments, a single inspection demonstrably narrows a building's risk
+posterior, and the first empirical bounds on assessor detection sensitivity exist,
+with a recovered two-wave pilot showing directly that findings persist while the
+documentation trail under-records them. The novelty remains the integration ---
+no prior work couples these elements in one auditable pipeline --- but the
+integration now carries evidence at every joint. What stands between this
+framework and live, building-resolved safety intelligence is data, not method:
+repeated assessment waves to point-identify assessor noise and intervention
+effectiveness, fine incident geography to nationalise the demonstrated sub-area
+targeting gains, and timed outcomes to push physics-calibrated consequences past
+their identifiability ceiling --- each a concrete, named acquisition rather than
+an open research question.

@@ -1,0 +1,114 @@
+\section{Reproducibility}
+\label{app:repro}
+
+Every numbered figure and table in this paper traces to a results artifact under
+\texttt{results/}, which traces to a module under \texttt{src/} that reads the
+project database. The end-to-end map, environment (\texttt{requirements.txt},
+frozen versions; Python~3.12), and the one-command database rebuild
+(\texttt{python -m src.build\_db --with-epc --with-lfb}, or attach the shipped
+DuckDB files) are documented in \texttt{REPRODUCE.md} at the repository root.
+Priors are exactly as stated in the model sections
+(Sections~\ref{sec:model}--\ref{sec:surrogate}); all sampler settings
+(draws, warmup, chains, subsample sizes) live in the cited modules and are echoed
+into each \texttt{results/*/summary.md}. All Monte Carlo and MCMC runs use fixed
+seeds, listed below. Tables~\ref{tab:repro-fig1} and~\ref{tab:repro-tab1} give the
+per-figure and per-table provenance; where a figure was regenerated from a saved
+CSV rather than a module entry point, that is stated.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \caption{Reproducing each numbered \emph{figure}. Commands are run from the
+  repository root inside the virtual environment; seeds are the module-level
+  \texttt{SEED} constants.}
+  \label{tab:repro-fig1}
+  \begin{tabular}{@{}p{1.5cm}p{4.4cm}p{4.0cm}p{4.3cm}@{}}
+    \toprule
+    Figure & Producing module / function & Input artifacts & Seed(s) \& config \\
+    \midrule
+    \ref{fig:occ-cal} & \texttt{src.models.evaluate\_occurrence}
+      (\texttt{fig\_calibration}); via \texttt{run\_occurrence eval}
+      & occurrence posterior (\texttt{results/occurrence/}); held-out FY2023/24
+      & \texttt{SEED=20240705} \\
+    \ref{fig:occ-decile} & \texttt{src.models.evaluate\_occurrence}
+      (\texttt{decile\_gradient\_fig}) & occurrence posterior; IMD deciles
+      & \texttt{SEED=20240705} \\
+    \ref{fig:cons-cal} & \texttt{src.models.consequence} (\texttt{fig\_reliability});
+      regenerated from the out-of-time prediction CSV, not a standalone entry point
+      & \texttt{results/consequence/} spread predictions
+      & \texttt{SEED=20260705} \\
+    \ref{fig:int-ame} & \texttt{src.models.interactions} (\texttt{fig\_ame\_heatmap})
+      & \texttt{dwelling\_fires} (DB); alarm$\times$occupancy design
+      & \texttt{SEED=20260705}; NUTS $4\times(800{+}1000)$ \\
+    \ref{fig:sim-fail} & \texttt{src.sim.make\_report}
+      (\texttt{fig\_failure\_by\_archetype}) & \texttt{results/sim/mc\_summary.csv}
+      & sim \texttt{BASE\_SEED=20260705} \\
+    \ref{fig:morris} & \texttt{python -m src.sim.morris\_sweep}
+      & \texttt{results/sim/morris\_ee.csv}, \texttt{morris\_ranking.csv}
+      & \texttt{BASE\_SEED=20260713}; 20 trajectories, 6 levels, 4{,}000 runs/cell \\
+    \ref{fig:decision-sens} & \texttt{src.models.decision} (\texttt{fig\_sensitivity})
+      & \texttt{results/} occurrence + consequence engines
+      & \texttt{SEED=20260705} \\
+    \ref{fig:london-targeting} & \texttt{src.models.london\_pilot}
+      (\texttt{fig\_targeting}) & London 50\,m cell panel
+      (\texttt{results/london\_pilot/}) & \texttt{SEED=20260706} \\
+    \ref{fig:latent} & \texttt{src.models.latent\_state}
+      (\texttt{figC\_measurement\_worked\_update}) & Camden FRA panel
+      (\texttt{data/processed/fra/}) & \texttt{SEED=20260706} \\
+    \ref{fig:ignition} & \texttt{src.models.ignition\_trends}
+      (\texttt{small\_multiples\_movers}) & \texttt{dwelling\_fires} ignition-source
+      shares & deterministic (no seed) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \caption{Reproducing each numbered \emph{table}. Numbers are summarised into the
+  named \texttt{results/*/summary.md} by the producing module.}
+  \label{tab:repro-tab1}
+  \begin{tabular}{@{}p{1.6cm}p{4.6cm}p{4.0cm}p{4.0cm}@{}}
+    \toprule
+    Table & Producing module / command & Input artifacts & Seed(s) \& config \\
+    \midrule
+    \ref{tab:datasets} & none --- hand-built from \texttt{data/sources/*.md}
+      & public source catalogue & n/a (see \texttt{REPRODUCE.md} \S1) \\
+    \ref{tab:occ-forest} & \texttt{python -m src.models.run\_occurrence fit}
+      & occurrence posterior (\texttt{results/occurrence/summary.md})
+      & \texttt{SEED=20240705}; exact full-data posterior via
+      \texttt{python -m src.models.full\_is} (\texttt{SEED=20260714};
+      unimodality probe \texttt{full\_is multistart} $\to$
+      \texttt{fullis\_multistart.csv}) / \texttt{full\_exact} (\texttt{20260713}) \\
+    \ref{tab:ablation} & \texttt{python -m src.models.spatial\_ablation fit}\,/\,\texttt{eval}
+      & \texttt{results/occurrence/} (\texttt{ladder.log}, \texttt{\_v2})
+      & \texttt{SEED=20240706} \\
+    \ref{tab:alarm} & \texttt{python -m src.models.consequence}
+      & \texttt{results/consequence/summary.md}
+      & \texttt{SEED=20260705}; NUTS $4\times(800{+}1000)$ \\
+    \ref{tab:proper} & \texttt{python -m src.models.consequence}
+      & held-out proper scores (\texttt{results/consequence/})
+      & \texttt{SEED=20260705}; NUTS $4\times(800{+}1000)$ \\
+    \ref{tab:sim} & \texttt{python -m src.sim.run\_experiments --runs 10000}
+      & \texttt{results/sim/mc\_summary.csv}
+      & \texttt{BASE\_SEED=20260705} ($+101$ per cell), $N{=}10{,}000$ \\
+    \ref{tab:decision} & \texttt{python -m src.models.decision}
+      & \texttt{results/decision/summary.md}
+      & \texttt{SEED=20260705} \\
+    \ref{tab:budget} & \texttt{python -m src.models.decision}
+      (\texttt{fig\_budget\_sweep} companion) & \texttt{results/decision/}
+      & \texttt{SEED=20260705} \\
+    \ref{tab:grenfell-assumptions} & \texttt{python -m src.sim.case\_study}
+      & \texttt{results/case\_study/summary.md} & \texttt{BASE\_SEED=20260705} \\
+    \ref{tab:casestudy} & \texttt{python -m src.sim.case\_study} \&\
+      \texttt{src.sim.hindcast} & \texttt{results/case\_study/}
+      & \texttt{BASE\_SEED=20260705} \\
+    \ref{tab:bounds} & \texttt{python src/models/latent\_state.py run}
+      & \texttt{results/latent\_state/summary.md} & \texttt{SEED=20260706} \\
+    \ref{tab:ignition} & \texttt{python -m src.models.ignition\_trends}
+      & \texttt{results/ignition\_trends/summary.md} & deterministic (no seed) \\
+    \bottomrule
+  \end{tabular}
+\end{table}

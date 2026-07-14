@@ -1,0 +1,109 @@
+\section{Data}
+\label{sec:data}
+
+The pipeline assembles eight public English datasets --- most published by the
+Ministry of Housing, Communities and Local Government (MHCLG) or the Office for
+National Statistics (ONS) --- into a single analysis-ready database, all joined on
+the 2021-Census Lower-layer Super Output Area (LSOA; code \texttt{lsoa21},
+33{,}755 in England). Table~\ref{tab:datasets} lists the sources. Every dataset is
+published under the Open Government Licence (OGL) v3.0, with the single exception
+noted below for address-level Energy Performance Certificate (EPC) records.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Public data sources for the pipeline. Grain is the native unit of
+  observation; all are keyed or aggregated to the LSOA for modelling. Row counts
+  are as ingested. MHCLG: Ministry of Housing, Communities and Local Government;
+  ONS: Office for National Statistics; EPC: Energy Performance Certificate;
+  IMD: Index of Multiple Deprivation; CQC: Care Quality Commission.}
+  \label{tab:datasets}
+  \small
+  \begin{tabular}{@{}llrl@{}}
+    \toprule
+    Dataset & Grain & Rows & Role in model \\
+    \midrule
+    Dwelling fires (MHCLG) & incident & 451{,}172 & $P(\text{casualty}),\,P(S)$ \\
+    Other-building fires (MHCLG) & incident & 231{,}426 & non-dwelling context \\
+    Low-level geography (MHCLG) & incident & 8{,}502{,}911 & $P(I)$ spatial exposure \\
+    EPC register (MHCLG) & certificate & 22{,}375{,}762 & building attributes ($x_b$) \\
+    \quad --- latest per dwelling & dwelling & 17{,}302{,}650 & dwelling-stock aggregates \\
+    IMD 2025 (MHCLG) & LSOA & 33{,}755 & deprivation covariates ($x_b$) \\
+    Census 2021 (ONS, 5 tables) & LSOA & 33{,}755 & occupancy proxies ($x_b$) \\
+    CQC active locations & premises & 56{,}870 & occupancy vulnerability \\
+    Postcode $\to$ LSOA lookup (ONS) & postcode & 2{,}714{,}964 & EPC join key \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Sources.}
+Fire incidence comes from the MHCLG fire statistics
+collection \citep{mhclg2026firestats}: three record-level datasets and a suite of
+aggregate FIRE-series benchmark tables. The \emph{dwelling-fires} dataset (one row
+per primary dwelling fire attended by a fire and rescue service (FRS), FY
+2010/11--2024/25) carries the ignition, alarm, spread and casualty fields used by
+the consequence models; the \emph{low-level-geography} dataset locates every
+incident to an LSOA and supplies the spatial exposure denominator. We ingested the
+full 92-table FIRE catalogue and retain 61 benchmark tables, including FRS
+response times (FIRE1001, used as a consequence covariate in
+Section~\ref{sec:results-casualty}), building-type spread and casualty rates
+(FIRE0301/0304, used to calibrate the institutional archetypes), and smoke-alarm
+operation rates (FIRE0701/0703/0705). Building attributes come from the EPC
+domestic register \citep{epcregister2025} --- 22.38\,M England lodgements,
+deduplicated to 17.30\,M latest-per-dwelling certificates for stock aggregates
+(built form, construction-age band, floor area, main fuel, tenure, floor level).
+Local covariates come from the Index of Multiple Deprivation (IMD) 2025 (all seven
+domains per LSOA) and five Census 2021 tables \citep{ons2021census}: accommodation
+type (TS044), central heating (TS046), occupancy rating (TS052), tenure (TS054)
+and household composition (TS003). Occupancy vulnerability is sharpened by the Care
+Quality Commission (CQC) register of active health-and-social-care locations
+(14{,}896 flagged as care homes) and, as a worked example of the
+house-in-multiple-occupation (HMO) archetype, the London Borough of Camden HMO
+licensing register (no national open HMO dataset exists).
+
+\paragraph{Join architecture.}
+The canonical spatial key is the LSOA. IMD, Census and the EPC dwelling-stock
+aggregates join to it directly; MHCLG has re-coded the full incident history
+(including 2010/11) to 2021 LSOAs, so no 2011$\to$2021 crosswalk is required. EPC
+certificates carry a postcode but no LSOA, so they are joined via the ONS best-fit
+UPRN join to the Ordnance Survey open identifier products, with postcode
+best-fit as fallback (99.91\% of England lodgements matched, 98.6\% exactly
+by UPRN). The record-level
+dwelling-fire dataset carries no geography below the FRS area (withheld for
+privacy), so those models are hierarchical over the 43--44 FRS areas rather than
+over LSOAs; the spatial occurrence model instead uses the LSOA-resolved incident
+counts against Census household denominators.
+
+\paragraph{Validation.}
+Twenty-seven automated checks pass (zero failures). Record-level dwelling-fire counts
+reconcile to the published FIRE0201 aggregate at a ratio of 1.000 in every year
+from 2010/11 to 2023/24 (residuals of a handful of incidents), and 0.995 in
+2024/25 (a known Suffolk data gap, below). The 33{,}755-LSOA count matches exactly
+across IMD and all five Census tables; 99.36\% of low-level-geography rows carry a
+valid English LSOA that joins to IMD at 100\% coverage. As an independent
+cross-check, the per-LSOA flat share derived from EPC agrees with the Census TS044
+flat share at Pearson $r = 0.977$, confirming the postcode-to-LSOA join and the
+EPC stock aggregation.
+
+\paragraph{Known quirks (carried honestly into the models).}
+Four data-quality issues are documented and handled rather than hidden.
+(i)~\emph{Suffolk 2024/25 gap:} the dwelling dataset is missing Suffolk records for
+September 2024--March 2025 (212 fires short), so 2024/25 record-level counts sit
+just below the FIRE0201 aggregate and Suffolk is excluded from that year in the
+occurrence model; the principled treatment --- marginalising the missing months
+under a partial-observation likelihood rather than dropping the area --- is v2
+work. (ii)~\emph{`Not known' LSOAs:} 54{,}194 incident rows carry an unresolved
+LSOA code (a publisher over-count for three services) and are flagged and excluded
+from spatial modelling via \texttt{is\_valid\_lsoa21}; treating the true LSOA as a
+latent allocation to be inferred, rather than discarding these rows, is likewise
+deferred to v2. (iii)~\emph{EPC \texttt{floor\_level} is flat-only:} it is
+populated for flats/maisonettes (roughly 30\% of stock) and blank for houses, so
+its 69\% null rate is structural, not missing data, and it is used only after
+filtering to flats. (iv)~\emph{Address-level EPC provenance, by design:} the
+processed database holds \emph{no} Royal Mail address strings --- only the Unique
+Property Reference Number (UPRN), postcode, administrative geography and dwelling
+attributes. Dwelling-level linkage is via the ONS UPRN Directory (ONSUD; exact
+UPRN joins under OGL), with postcode best-fit as a fallback; the Royal Mail
+intellectual property that carries the address-level licence restriction exists
+only in the raw source, which we do not redistribute. Reproduction is therefore via
+the documented pipeline plus a free EPC-service registration, and every EPC
+quantity still enters the model as an LSOA-level aggregate.

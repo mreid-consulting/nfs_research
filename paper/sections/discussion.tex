@@ -1,0 +1,126 @@
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+The framework fits the post-Grenfell regulatory direction directly. Safety cases
+under the Building Safety Act ask duty-holders to demonstrate that risks are
+understood and managed on an ongoing basis \citep{grenfell2024phase2,bsa2022};
+a posterior risk distribution with explicit credible intervals and
+missing-evidence flags is a more faithful object for that purpose than a
+categorical score, and the expected-value-of-inspection machinery turns the same
+posterior into a prioritisation rule for where to spend finite inspection effort.
+The results support the premise: the occurrence model is calibrated on held-out
+years and recovers the deprivation gradient; the consequence models are calibrated
+out-of-time and isolate a clean detection$\to$spread signal; and the simulator
+reproduces the observed spread orderings while exposing an archetype-specific
+mechanism (detection helps flats and houses, but not mobility-limited care homes)
+that a purely statistical model would miss; and the value-of-targeting study puts a
+conservative lower bound of a roughly ninefold return on that prioritisation over
+untargeted allocation. Taken together they move FRA from a static compliance
+checklist \citep{pas79_1_2020,pas79_2_2020} toward an updateable, evidence-based
+risk picture --- with the fully sequential, inspection-assimilating version
+specified in Section~\ref{sec:model} as the programme's next stage.
+
+The real-building case study sharpens what the archetypes are for. Grounding the
+high-rise-flat archetype against Grenfell Tower shows that its scale parameters ---
+storeys and occupant load --- matter far less to modelled risk than its regime
+assumptions: doubling the storeys shifts the exposed-household failure probability by
+only 2\%, whereas losing compartmentation and abandoning stay-put shifts expected
+fatalities by two orders of magnitude. The archetype is a sound geometric proxy
+precisely because it already encodes the safety-critical single-stair topology; its
+unavoidable simplification is that, like every archetype, it presumes the design
+strategy holds. The same study marks the framework's outer boundary: an interior
+room--corridor--stair graph cannot represent external cladding-driven spread, the
+mechanism that drove Grenfell, and must defer to the external-wall and safety-case
+regime of the Building Safety Act for that hazard. A real-geometry v2 pipeline ---
+replacing archetype graphs with per-building layouts drawn from the downloadable
+building-specification sources we catalogue (\texttt{docs/building\_specs\_sources.md})
+--- is the natural next step, but the external-wall hazard will remain a regulated,
+per-building duty rather than something a population-scale model should attempt.
+
+Several limitations bound these claims, and we have kept them visible rather than
+smoothing them over. This is an England-only residential MVP built on archetype
+graphs, not real building geometry; the simulator is a transparent stochastic
+caricature, not fire-physics CFD, and its multi-storey houses over-predict spread
+beyond the floor of origin because of an idealised open internal stair; the
+care-home archetype's building-level evacuation-failure rate overstates the
+observed communal-living casualty rate by roughly $1.4\times$ per occupant ---
+and far more ($\sim$$4.8\times$) at the building-level any-failure measure ---
+reflecting its no-staff-assist, stay-put-free full-evacuation assumption. Both
+headline posteriors are exact full-data objects --- the consequence models by
+NUTS on all 451{,}172 records, the occurrence model by PSIS-corrected Laplace
+importance sampling on all 202{,}530 training rows ($\hat{k}=0.33$;
+Section~\ref{sec:model}) after full-data NUTS failed under three
+parameterisations --- each corroborated by subsample NUTS, ADVI and MLE
+cross-checks; the occurrence model's linear time trend under-predicts the
+steeper 2024/25 decline. The consequence models are
+covariate-adjusted associations, not causal effects: the casualty--alarm odds ratio
+falls below one purely through occupancy confounding, which is precisely why the
+model carries a latent-state layer, but that layer de-confounds by assumption and
+structure rather than by identification, and this paper reports the adjusted
+associations that feed it rather than a validated causal estimate. The FRS
+response-time covariate carries little trustworthy independent signal: it is
+ecological (identified at FRS$\times$year resolution and entangled with the secular
+trend), and its effect on spread is not even robust in sign --- below one on the
+subsample, above one at full data --- so we retain it only as a control and report no
+directional response-time effect. The exact full-data fit exposes a further honest
+gap: it undercovers per-service held-out counts (an FRS-overdispersion a single
+random intercept misses), so per-service predictive intervals should be read as
+anti-conservative and a random-slope extension is future work. Data linkage is imperfect --- record-level
+fires resolve only to FRS area, not LSOA; covariates mix vintages (IMD 2025, Census
+2021, EPC 2012--2026); and EPC attributes enter only as LSOA aggregates, consistent
+with the address-level redistribution restriction of Section~\ref{sec:data}. Finally,
+fire is a rare event, so building-level validation is not possible from open data: our
+calibration is at the aggregate (LSOA-year and FRS-area) level, and the worked
+building-level decomposition of Section~\ref{sec:results-synthesis} is illustrative of
+the composition, not a validated per-building prediction.
+
+\paragraph{Equity of targeted prevention.} Because fire risk is strongly
+deprivation-linked, any risk-targeted allocation concentrates visits in deprived
+areas. We regard this as the intended behaviour of a prevention programme ---
+resources flow to where expected harm is greatest --- but it carries obligations
+the framework should make explicit rather than bury in a score: targeting
+criteria must be auditable (a virtue of interpretable rate ratios over black-box
+scores), the uncertainty attached to any area's ranking should be visible to
+decision-makers, and allocations should be monitored for unintended effects, such
+as areas of genuinely high but poorly evidenced risk (wide posteriors) being
+systematically deprioritised relative to areas that are merely well measured.
+The expected-benefit policy of Section~\ref{sec:results-decision} partially
+addresses the latter by valuing uncertainty reduction, but a full fairness
+analysis of risk-targeted fire prevention --- who gains, who is overlooked, and
+under which valuation of harm --- is future work we consider necessary before
+operational deployment.
+
+\paragraph{The physics programme.} The simulator's mechanism-informed status is a
+staging point, not an endpoint. A companion work builds the corresponding physics
+engine (NIST CFAST zone models over the same archetypes, with era-derived boundary
+materials and design fires keyed to the national ignition-source distribution) and
+calibrates its parameters against the observed English spread margins with a
+model-discrepancy term. Its headline is a caution this paper's framing anticipates:
+the calibrated physics reproduces the aggregate spread surface, but aggregate
+margins identify only one physical parameter (effective door-openness) --- the
+remainder require \emph{timed}, scenario-resolved calibration targets, which is a
+further argument for the record-level data access discussed above.
+
+\paragraph{Secondary findings with policy implications.} Two supporting analyses
+sharpen the operational picture. The no-alarm spread penalty is not uniform across
+households --- it is roughly twice the pooled value for lone pensioners
+(Section~\ref{sec:results-interactions}) --- giving the targeting layer a concrete,
+data-backed reason to up-weight areas rich in that group beyond what their fire rate
+alone implies, precisely where consequence decouples from occurrence, while the night
+penalty is a whole-stock effect that warrants no dwelling-specific multiplier. And the
+ignition-source analysis surfaces a data-infrastructure gap: England's central
+incident taxonomy cannot isolate lithium-ion e-bike and e-scooter fires, the hazard
+the sector is most anxious about, so the most actionable recommendation there is not a
+model change but a taxonomy one (Section~\ref{sec:results-ignition}).
+
+\paragraph{The inspection layer, meeting data.} The sharpest test of the paper's
+central claim --- that an FRA is a noisy observation, not a risk score --- is the first
+instantiation of the inspection layer on real assessments
+(Section~\ref{sec:results-latent}): the apparatus runs end to end on 1{,}441 published
+assessments and a single inspection demonstrably narrows a block's fire-rate posterior,
+yet on one cross-sectional wave the latent's coupling to fire rate is a
+remediation-confounded null, so a snapshot FRA is \emph{not} a validated proxy for
+persistent fire propensity. That is exactly the situation the framework is designed for
+--- inspections assimilated as noisy evidence under explicit uncertainty --- and it
+names the missing ingredient: a second assessment wave to turn the retrospective check
+into a prospective test and point-identify the assessor-noise parameters.

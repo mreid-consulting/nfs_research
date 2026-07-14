@@ -1,0 +1,135 @@
+\section{Related Work}
+\label{sec:related}
+
+We organise prior work along the eight themes that emerged from a systematic
+sweep of the literature, and position our integration against each. Seven
+differentiators recur: (A) UK FRA / Building-Safety-Act integration; (B)
+Bayesian latent-state inference of building condition; (C) calibrated
+uncertainty with missing-evidence flags; (D) inspection as noisy observation;
+(E) rare-event outcome treatment; (F) a mechanism-informed consequence
+surrogate; and (G) decision-theoretic inspection prioritisation.
+
+\paragraph{UK fire-safety landscape and FRA methodology.}
+A recent systematic review of UK building fire-safety practice catalogues its
+technological, mitigation, behavioural, and regulatory strands, and flags
+persistent compliance, enforcement, and maintenance gaps \citep{dauda2025uk};
+the Hackitt review diagnosed a ``broken'' regulatory system and seeded the
+outcomes-based safety-case regime that followed \citep{hackitt2018,perry2025}.
+Quantitative fire risk assessment itself has a long lineage --- event-tree and
+deterministic consequence analysis in textbook form \citep{yung2008,rasbash2004},
+statistics-driven residential risk indices \citep{xin2013}, single-factor
+effectiveness estimates such as smoke-alarm impact \citep{gilbert2021}, and
+UK-specific trend analyses of accidental dwelling fires \citep{taylor2026}.
+This literature motivates our setting (A) but is either policy diagnosis or
+static, deterministic assessment; what an ``evidence-based'' regime lacks, and
+what we supply, is the probabilistic latent-state machinery (B, C).
+
+\paragraph{Probabilistic and Bayesian-network fire-risk models.}
+The closest prior line chains fire development, escape, and intervention for UK
+dwellings in three-part Bayesian networks (BNs)
+\citep{matellini2018threepart,matellini2013}, alongside BN fatality and spread
+models \citep{hanea2009,cheng2009} and a credal-network probabilistic risk
+assessment of fire occurrence applied to Grenfell Tower
+\citep{estradalugo2019grenfell}. More recent variants extend the construction
+to heritage buildings \citep{chen2023hist}, subway and tunnel scenario
+evolution \citep{li2024subway,hidayat2025tunnel}, and high-rise electrical and
+fuzzy composite scoring \citep{su2023electrical,wang2021fuzzy,tan2021tho}, all
+on the BN foundations of \citet{pearl1988}. We adopt this tradition's
+latent-state, posterior view of risk --- but throughout it, conditional
+probability tables (CPTs) are fixed from expert judgement or aggregate
+statistics, inputs are treated as certain, and outputs are points: no
+calibrated uncertainty (C), no treatment of inspections as noisy observations
+(D), no physics-based consequence layer (F), and no inspection-prioritisation
+layer (G).
+
+\paragraph{Uncertainty quantification and decision-theoretic inspection.}
+Risk matrices --- the format operational FRA actually uses --- have poor
+resolution and can rank risks worse than random \citep{cox2008,thomas2014},
+while calibration and sharpness under proper scoring rules provide the
+evaluation standard for probabilistic forecasts that we adopt
+\citep{gneiting2007}. Separately, the structural-reliability
+risk-based-inspection and value-of-information tradition treats inspections as
+imperfect information that updates a reliability estimate, and optimises
+inspection planning on that basis
+\citep{straub2005,luque2019,zhang2021voi,vereecken2020,klerk2019}. Our
+contribution here is a transplant: importing inspection-as-noisy-observation
+(D) and expected value of inspection (G) into fire risk assessment, and
+replacing categorical scores with posterior distributions (C) --- a combination
+this tradition has never instantiated for fire.
+
+\paragraph{Fire-risk datasets, geospatial mapping, and service targeting.}
+England-wide small-area evidence links deprivation to fire-related dwelling
+casualties \citep{li2022}; emergency-service demand analytics
+\citep{londonblue2025} and evaluations of home-fire-safety-visit targeting
+\citep{waring2024} supply the operational context, with hierarchical Bayesian
+small-area rate estimation as the methodological template \citep{macnab2003}.
+The open-datacube precedent is IberFire, a spatio-temporal wildfire-risk cube
+assembled entirely from open sources \citep{erzibengoa2025iberfire}. These
+works supply our covariates and the open-data blueprint (A), but remain
+ecological and associational: none couples the data to a building-conditioned
+probabilistic model with quantified uncertainty (B, C).
+
+\paragraph{Machine learning in fire safety.}
+Reviews of fire-safety machine learning map a fast-growing field and flag
+precisely the weaknesses we target: underdeveloped uncertainty quantification
+and calibration \citep{yildiz2025ml,tapehnaser2022}, with mechanistically grounded
+learning advocated as the remedy \citep{naser2021}. Applications span
+smart-building design \citep{zeng2024smart}, classifiers explained post hoc
+with SHapley additive explanations (SHAP) \citep{lu2023stadium,dai2025interp},
+and knowledge-graph and city-scale forecasting
+\citep{xu2025knowgraph,lee2025urbanfire}. We use machine learning differently:
+as a calibrated surrogate \emph{inside} a probabilistic model (C, F), rather
+than as a black-box or post-hoc-explained point classifier.
+
+\paragraph{Fast fire-simulation surrogates.}
+A systematic review of physics-informed surrogates finds them rarely embedded
+inside a probabilistic risk model \citep{yarmohammadian2025pism} --- the
+integration gap this paper occupies. The component technology is mature:
+emulators predict fire fields, flashover, and detection orders of magnitude
+faster than computational fluid dynamics
+\citep{lattimer2020,wang2021pflash,nguyen2022,zeng2022ifetool,zeng2024jcde};
+physics-informed neural networks learn interpretable spread parameters
+\citep{vogiatzoglou2025}; probabilistic diffusion surrogates output spread
+ensembles \citep{yu2026}; and graph neural networks serve as surrogates over
+building-block graphs \citep{wu2025gnn}. We adopt the surrogate-on-graph idea
+for our archetypes (F) but couple it into the risk posterior with propagated
+uncertainty (C).
+
+\paragraph{Coupled fire--evacuation modelling.}
+The deterministic available-versus-required safe-egress-time (ASET/RSET) margin
+has been criticised as conceptually flawed \citep{babrauskas2010} and reframed
+distributionally \citep{schroeder2020}; one-way fire-to-egress coupling and
+agent-based evacuation models degrade movement under tenability loss
+\citep{cheong2021,wang2025medbuild}, with occupant vulnerability shaping
+evacuation outcomes \citep{tancogne2016}. We follow the distributional turn to
+its conclusion: evacuation failure is a node inferred \emph{within} the risk
+model with propagated uncertainty (C, E), not a deterministic single-scenario
+margin.
+
+\paragraph{Rare-event statistics.}
+Extreme-value and peaks-over-threshold methods model heavy-tailed fire losses
+\citep{ramachandran1974,mcneil1997,embrechts1997}, and survival models give an
+interpretable time-to-event template \citep{kalair2021}. We apply this
+machinery to rare-event fire outcomes coupled to a building-conditioned
+posterior (E) --- a link absent from its actuarial and traffic source domains.
+
+\paragraph{Positioning.}
+Our closest competitors, in order: the UK dwelling-fire Bayesian-network line
+\citep{matellini2018threepart,matellini2013}, which shares our setting and
+graphical structure but fixes its CPTs, treats inputs as certain, and offers
+neither calibrated intervals nor a latent-state posterior, inspection-noise
+model, physics surrogate, or prioritisation layer; the structural
+risk-based-inspection tradition \citep{straub2005,luque2019}, the closest
+analogue to our contributions (D) and (G) but developed for structural
+deterioration and never instantiated for fire; the physics-informed surrogate
+line \citep{yarmohammadian2025pism,naser2021}, which defines the surrogate half
+of (F) but almost never embeds it in a risk model with quantified uncertainty;
+and the risk-matrix critique \citep{cox2008,thomas2014}, which justifies
+abandoning categorical outputs (C) but supplies no constructive replacement.
+Every competitor covers one or two of the seven differentiators; none couples
+UK regulatory context, a Bayesian latent-state model of building condition,
+calibrated uncertainty with missing-evidence flags,
+inspection-as-noisy-observation, rare-event outcome treatment, a
+mechanistic consequence surrogate, and decision-theoretic inspection
+prioritisation in a single framework. That integration is the novelty claim,
+and Section~\ref{sec:results} tests its components rather than asserting them.

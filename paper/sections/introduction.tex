@@ -1,0 +1,72 @@
+\section{Introduction}
+\label{sec:intro}
+
+Fire in the UK residential built environment remains a large and, recently, a
+growing problem: fire and rescue services attended 40{,}350 building fires in
+England in the year ending December 2025, up 5.5\% year-on-year, of which 26{,}298
+were dwelling fires \citep{mhclg2026firestats}. Yet the fire risk assessment (FRA)
+that governs those buildings is still periodic, qualitative, and compliance-driven
+--- checklist judgements recorded under the Regulatory Reform (Fire Safety)
+Order \citep{rrfso2005} and codified methodologies such as PAS~79
+\citep{pas79_1_2020,pas79_2_2020}. The Grenfell Tower fire and the Phase~2 Inquiry
+reframed residential fire safety around evidence, accountability, and the active
+management of higher-risk buildings \citep{grenfell2024phase2}, and the regulatory
+response --- the Fire Safety Act 2021 \citep{firesafetyact2021} and the Building
+Safety Act 2022 \citep{bsa2022}, with their safety-case regime --- demands exactly
+the kind of quantitative, evidence-updated risk picture that current practice does
+not produce.
+
+Three gaps stand out. Risk is communicated as a categorical score rather than a
+distribution, despite evidence that risk matrices have poor resolution and can rank
+worse than random \citep{cox2008,thomas2014}. Inspection findings are treated as
+ground truth rather than as noisy, intermittent observations; a targeted search
+across the fire-risk-assessment, inter-rater-reliability, assessor-variability, and
+PAS~79 literatures surfaced competence standards and professional guidance, but we
+are not aware of any empirical study estimating inter-assessor variability from
+repeated assessments of the same UK residential building --- the sector's response
+has been a competence standard \citep{bs8674_2025} rather than measurement
+of assessor noise --- motivating the noisy-observation treatment we import from
+structural risk-based inspection \citep{straub2005,luque2019}. And fire outcomes are
+rare events, yet calibration and uncertainty quantification (UQ) are seldom made
+explicit in operational FRA, even as reviews of fire machine learning confirm that
+UQ and calibration remain underdeveloped \citep{tapehnaser2022} against an established
+calibration-and-sharpness standard \citep{gneiting2007}.
+
+We recast FRA as Bayesian inference under uncertainty: a building's fire risk is a
+posterior distribution over ignition, spread, evacuation failure, and consequence
+severity, inferred from heterogeneous public evidence and updateable as new
+observations arrive. The novelty is not a new Bayesian network, a new fire
+simulator, or a new evacuation model in isolation; it is an auditable decision
+framework that couples calibrated UK open-data rare-event modelling,
+mechanistically grounded consequence simulation, uncertainty propagation, and
+decision-theoretic prevention targeting into one posterior-risk workflow. The paper
+is explicit throughout about what is built and what is specified: the calibrated
+public-data and simulation components below are \emph{implemented}, while the
+latent-state, noisy-inspection extension for live risk updating
+(Section~\ref{sec:model}) is \emph{proposed} --- fully specified but not yet fully
+instantiated. Five contributions follow:
+
+\begin{enumerate}
+  \item A UK open-data fire-risk database linking incident, building-stock,
+        deprivation, occupancy, and vulnerability evidence at dwelling and
+        small-area scale, validated against published totals
+        (Section~\ref{sec:data}).
+  \item A calibrated rare-event occurrence model for dwelling fires ---
+        hierarchical negative-binomial with out-of-time probabilistic validation
+        (Section~\ref{sec:results}).
+  \item Consequence models that explicitly separate predictive association from
+        intervention effect, with formal treatment of alarm-state confounding,
+        alongside a mechanism-informed archetype fire/evacuation simulator that
+        supplies consequence estimates where public geometry and evacuation data
+        do not exist (Section~\ref{sec:surrogate}).
+  \item A decision-theoretic targeting demonstration: under stated assumptions, a
+        fixed prevention budget allocated by posterior risk and expected benefit
+        returns roughly nine times the value of untargeted allocation and 2.5
+        times deprivation-only targeting (Section~\ref{sec:results-decision}).
+  \item A proposed latent-state formulation in which inspection findings enter as
+        noisy observations (Section~\ref{sec:model}), motivated by the
+        measurement-error tradition of structural risk-based inspection, together
+        with a real-building stress test bounding the simulator's regime
+        assumptions against Grenfell Tower
+        (Section~\ref{sec:results-casestudy}).
+\end{enumerate}
