@@ -19,7 +19,7 @@ context: Grenfell Phase 2 Inquiry, Fire Safety Act 2021, Building Safety Act
 ground truth; rare-event calibration ignored. Five contributions listed.
 
 ## 2. Related Work
-Restructured around the eight literature themes of `docs/literature.md`, each
+Restructured around eight literature themes, each
 with a short positioning line keyed to our seven differentiators (A UK-FRA/BSA
 integration, B Bayesian latent-state, C calibrated UQ, D inspection-as-noisy-
 observation, E rare-event treatment, F physics-informed surrogate, G decision-
